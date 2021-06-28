@@ -30,43 +30,42 @@ void Key_init(const Key_Driver* driver) {
  * all of callbacks handle and fire in this function
  */
 void Key_irq(void) {
+    Key_State state;
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
+    while (KEY_NULL != Key_ptr(pKey)) {
 #else
     Key** pKey = keys;
+    uint8_t len = KEY_MAX_NUM;
+    while (len--) {
 #endif
-    while (KEY_NULL != Key_ptr(pKey)) {
         // update current state
+        state = Key_ptr(pKey)->State;
     #if KEY_ACTIVE_STATE
-        Key_ptr(pKey)->State = (Key_ptr(pKey)->State << 1) | (keyDriver->readPin(Key_ptr(pKey)->Config) ^ Key_ptr(pKey)->ActiveState);
+        state = ((state << 1) | (keyDriver->readPin(Key_ptr(pKey)->Config) ^ Key_ptr(pKey)->ActiveState)) & 0x03;
     #else
-        Key_ptr(pKey)->State = (Key_ptr(pKey)->State << 1) | keyDriver->readPin(Key_ptr(pKey)->Config);
+        state = ((state << 1) | keyDriver->readPin(Key_ptr(pKey)->Config)) & 0x03;
     #endif // KEY_ACTIVE_STATE
-        
+        Key_ptr(pKey)->State = state;
         // call callback on new state
-	#if KEY_NONE_CALLBACK
-		if (Key_ptr(pKey)->NotActive == Key_NotHandled) {
-    #if KEY_MULTI_CALLBACK
-            Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.callbacks[Key_ptr(pKey)->State](Key_ptr(pKey), Key_ptr(pKey)->State);
-    #else
-            Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.onChange(Key_ptr(pKey), pKey->State);
-    #endif /* KEY_MULTI_CALLBACK_ENABLE */
-        }
-        else if (Key_State_None == Key_ptr(pKey)->State && Key_ptr(pKey)->NotActive != Key_NotHandled) {
-                Key_ptr(pKey)->NotActive = Key_NotHandled;
-        }
-    #else
-		if (Key_State_None != Key_ptr(pKey)->State && Key_ptr(pKey)->NotActive == Key_NotHandled) {
+		if (Key_ptr(pKey)->NotActive == Key_NotHandled
+        #if !KEY_NONE_CALLBACK
+            && Key_State_None != state
+        #endif  
+            ) {
         #if KEY_MULTI_CALLBACK
-            Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.callbacks[Key_ptr(pKey)->State](Key_ptr(pKey), Key_ptr(pKey)->State);
+            if (Key_ptr(pKey)->Callbacks.callbacks[state]) {
+                Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.callbacks[state](Key_ptr(pKey), state);
+            }
         #else
-            Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.onChange(Key_ptr(pKey), Key_ptr(pKey)->State);
+            if (Key_ptr(pKey)->Callbacks.onChange) {
+                Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.onChange(Key_ptr(pKey), state);
+            }
         #endif /* KEY_MULTI_CALLBACK_ENABLE */
         }
-        else if (Key_State_None == Key_ptr(pKey)->State && Key_ptr(pKey)->NotActive != Key_NotHandled) {
+        else if (Key_State_None == state && Key_ptr(pKey)->NotActive != Key_NotHandled) {
             Key_ptr(pKey)->NotActive = Key_NotHandled;
         }
-    #endif
     #if KEY_MAX_NUM == -1
         // switch to previous key
         pKey = pKey->Previous;
@@ -86,6 +85,16 @@ void Key_irq(void) {
 void Key_setConfig(Key* key, const Key_PinConfig* config) {
     key->Config = config;
 }
+/**
+ * @brief get key pin config
+ * 
+ * @param key 
+ * @return const Key_PinConfig* 
+ */
+const Key_PinConfig* Key_getConfig(Key* key) {
+    return key->Config;
+}
+
 /**
  * @brief add key into list for process
  * 
@@ -145,18 +154,19 @@ uint8_t Key_remove(Key* remove) {
 					#endif
             // remove key dropped from link list
             pKey->Previous = remove->Previous;
-            remove->Previous = NULL;
-            break;
+            remove->Previous = KEY_NULL;
+            return 1;
         }
         pKey = pKey->Previous;
     #else
         if (remove == *pKey) {
             *pKey = KEY_NULL;
-            break;
+            return 1;
         }
         pKey++;
     #endif // KEY_MAX_NUM == -1
     }
+    return 0;
 }
 
 #if KEY_MULTI_CALLBACK
@@ -184,4 +194,16 @@ void Key_onChange(Key* key, Key_Callback cb) {
 void Key_setActiveState(Key* key, Key_ActiveState state) {
     key->ActiveState = (uint8_t) state;
 }
+Key_ActiveState Key_getActiveState(Key* key) {
+    return (Key_ActiveState) key->ActiveState;
+}
 #endif /* KEY_ACTIVE_STATE_ENABLE */
+
+#if KEY_ARGS
+void Key_setArgs(Key*, void* args) {
+    key->Args = args;
+}
+void* Key_getArgs(Key* key) {
+    return key->Args;
+}
+#endif

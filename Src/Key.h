@@ -16,11 +16,15 @@
 extern "C" {
 #endif 
 
-#include <stdint.h>
-
 /******************************************************************************/
 /*                                Configuration                               */
 /******************************************************************************/
+/**
+ * Include your libs
+ * IO libs maybe needed
+ */
+#include <stdint.h>
+#include "..\Port\KeyIO.h"
 
 /**
  * @brief define KEY_MULTI_CALLBACK if u want have sperate callback functions
@@ -31,10 +35,10 @@ extern "C" {
 /**
  * @brief user can have different Key Active State for each key (pin)
  */
-#define KEY_ACTIVE_STATE                1
+#define KEY_ACTIVE_STATE                0
 
 /**
- * @brief give user Key_State_None callback, must enable KEY_MULTI_CALLBACK
+ * @brief give user Key_State_None callback
  * None callback fire periodically
  */
 #define KEY_NONE_CALLBACK	            0
@@ -42,7 +46,7 @@ extern "C" {
 /**
  * @brief user must define deinitPin function in Key_Driver
  */
-#define KEY_USE_DEINIT	                1
+#define KEY_USE_DEINIT	                0
 /**
  * @brief if Key is based on pair of GPIO and Pin num must enable it
  * for arduino must disable it
@@ -53,7 +57,7 @@ extern "C" {
  * @brief hold key io
  * user can change it to GPIO_TypeDef or anything else that system want
  */
-typedef void* Key_IO;
+typedef GPIO_TypeDef* Key_IO;
 /**
  * @brief hold key pin num or pin bit
  * user can change it to uint8_t for 8-bit systems like AVR
@@ -66,6 +70,11 @@ typedef uint8_t Key_Pin;
  * x for limited keys, lib use pointer array
  */
 #define KEY_MAX_NUM                     -1
+
+/**
+ * @brief user can store some args in key struct and retrive them in callbacks
+ */
+#define KEY_ARGS                        0
 
 /******************************************************************************/
 
@@ -135,8 +144,8 @@ typedef uint8_t (*Key_ReadPinFn)(const Key_PinConfig* config);
  * 
  * @param key show which key changed
  * @param state show current state of key
- * @return uint8_t user can return 0 if wanna get callback on other events 
- *                  otherwise can return 1 that mean key handled nad next event is onPressed
+ * @return user can return Key_NotHandled (0) if wanna get callback on other events 
+ *                  otherwise can return Key_Handled (1) that mean key handled nad next event is onPressed
  */
 typedef Key_HandleStatus (*Key_Callback)(Key* key, Key_State state);
 /**
@@ -186,6 +195,9 @@ struct _Key {
 #if KEY_MAX_NUM == -1
     struct _Key*            Previous;               			/**< point to previous key, if it's null show they key is end of linked list */
 #endif // KEY_MAX_NUM == -1
+#if KEY_ARGS
+    void*                   Args;
+#endif
     const Key_PinConfig*    Config;                 			/**< hold pointer to pin configuration */
     Key_Callbacks           Callbacks;                          /**< hold user separate callbacks for each key state */
     uint8_t                 State           : 2;    			/**< show current state of key*/
@@ -198,6 +210,7 @@ void Key_init(const Key_Driver* driver);
 void Key_irq(void);
 
 void Key_setConfig(Key* key, const Key_PinConfig* config);
+const Key_PinConfig* Key_getConfig(Key* key);
 
 uint8_t Key_add(Key* key, const Key_PinConfig* config);
 uint8_t Key_remove(Key* remove);
@@ -215,7 +228,13 @@ uint8_t Key_remove(Key* remove);
 
 
 #if KEY_ACTIVE_STATE
-void Key_setActiveState(Key* key, Key_ActiveState state);
+    void Key_setActiveState(Key* key, Key_ActiveState state);
+    Key_ActiveState Key_getActiveState(Key* key);
+#endif
+
+#if KEY_ARGS
+    void Key_setArgs(Key*, void* args);
+    void* Key_getArgs(Key* key);
 #endif
 
 #ifdef __cplusplus
