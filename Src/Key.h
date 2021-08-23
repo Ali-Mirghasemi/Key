@@ -2,7 +2,7 @@
  * @file Key.h
  * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
  * @brief this library use for drive key, button and input signals
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2021-06-28
  * 
  * @copyright Copyright (c) 2021
@@ -38,6 +38,11 @@ extern "C" {
 #define KEY_ACTIVE_STATE                0
 
 /**
+ * @brief if you enable this option you can disable or enable key
+ */
+#define KEY_ENABLE_FLAG                 0
+
+/**
  * @brief give user Key_State_None callback
  * None callback fire periodically
  */
@@ -69,7 +74,7 @@ typedef uint8_t Key_Pin;
  * -1 for unlimited, lib use linked list 
  * x for limited keys, lib use pointer array
  */
-#define KEY_MAX_NUM                     -1
+#define KEY_MAX_NUM                     3
 
 /**
  * @brief user can store some args in key struct and retrive them in callbacks
@@ -78,6 +83,8 @@ typedef uint8_t Key_Pin;
 
 /******************************************************************************/
 
+#define KEY_NULL            ((Key*) 0)
+#define KEY_CONFIG_NULL     ((Key_PinConfig*) 0)
 
 /**
  * @brief hold pin configuration that use for handle key
@@ -183,7 +190,6 @@ typedef union {
     #else
         Key_Callback        onChange;
     #endif // KEY_MULTI_CALLBACK
-
     };
 } Key_Callbacks;
 
@@ -203,7 +209,9 @@ struct _Key {
     uint8_t                 State           : 2;    			/**< show current state of key*/
     uint8_t                 NotActive       : 1;    			/**< show other states will be ignore or not */
     uint8_t                 ActiveState     : 1;    			/**< this parameters use only when Activestate Enabled */
-    uint8_t                 Reserved        : 4;    
+    uint8_t                 Configured      : 1;                /**< this flag shows Key is configured or not, just useful fo fixed key num */
+    uint8_t                 Enabled         : 1;                /**< check this flag in irq */
+    uint8_t                 Reserved        : 2;
 };
 
 void Key_init(const Key_Driver* driver);
@@ -212,8 +220,13 @@ void Key_irq(void);
 void Key_setConfig(Key* key, const Key_PinConfig* config);
 const Key_PinConfig* Key_getConfig(Key* key);
 
+#if KEY_MAX_NUM > 0
+    Key* Key_new(void);
+#endif // KEY_MAX_NUM
+
 uint8_t Key_add(Key* key, const Key_PinConfig* config);
 uint8_t Key_remove(Key* remove);
+Key*    Key_find(const Key_PinConfig* config);
 
 #if KEY_MULTI_CALLBACK
     void Key_onHold(Key* key, Key_Callback cb);
@@ -230,6 +243,11 @@ uint8_t Key_remove(Key* remove);
 #if KEY_ACTIVE_STATE
     void Key_setActiveState(Key* key, Key_ActiveState state);
     Key_ActiveState Key_getActiveState(Key* key);
+#endif
+
+#if KEY_ENABLE_FLAG
+    void Key_setEnabled(Key* key, uint8_t enabled);
+    uint8_t Key_isEnabled(Key* key);
 #endif
 
 #if KEY_ARGS

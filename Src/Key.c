@@ -1,20 +1,11 @@
 #include "Key.h"
 
-/* private macros */
-#define KEY_NULL            ((Key*) 0)
-
-#if KEY_MAX_NUM == -1
-    #define Key_ptr(KEY)    KEY
-#else
-    #define Key_ptr(KEY)    (*KEY)
-#endif // KEY_MAX_NUM == -1
-
 /* private variables */
 static const Key_Driver* keyDriver;
 #if KEY_MAX_NUM == -1
     static Key* lastKey = KEY_NULL;
 #else
-    static Key* keys[KEY_MAX_NUM] = {0};
+    static Key keys[KEY_MAX_NUM] = {0};
 #endif // KEY_MAX_NUM == -1
 
 /**
@@ -33,43 +24,51 @@ void Key_irq(void) {
     Key_State state;
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
-    while (KEY_NULL != Key_ptr(pKey)) {
+    while (KEY_NULL != pKey) {
 #else
-    Key** pKey = keys;
+    Key* pKey = keys;
     uint8_t len = KEY_MAX_NUM;
     while (len--) {
+        if (pKey->Configured) {
 #endif
+    #if KEY_ENABLE_FLAG
+        if (pKey->Enabled) {
+    #endif // KEY_ENABLE_FLAG
         // update current state
-        state = Key_ptr(pKey)->State;
+        state = pKey->State;
     #if KEY_ACTIVE_STATE
-        state = ((state << 1) | (keyDriver->readPin(Key_ptr(pKey)->Config) ^ Key_ptr(pKey)->ActiveState)) & 0x03;
+        state = ((state << 1) | (keyDriver->readPin(pKey->Config) ^ pKey->ActiveState)) & 0x03;
     #else
-        state = ((state << 1) | keyDriver->readPin(Key_ptr(pKey)->Config)) & 0x03;
+        state = ((state << 1) | keyDriver->readPin(pKey->Config)) & 0x03;
     #endif // KEY_ACTIVE_STATE
-        Key_ptr(pKey)->State = state;
+        pKey->State = state;
         // call callback on new state
-		if (Key_ptr(pKey)->NotActive == Key_NotHandled
+		if (pKey->NotActive == Key_NotHandled
         #if !KEY_NONE_CALLBACK
             && Key_State_None != state
         #endif  
             ) {
         #if KEY_MULTI_CALLBACK
-            if (Key_ptr(pKey)->Callbacks.callbacks[state]) {
-                Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.callbacks[state](Key_ptr(pKey), state);
+            if (pKey->Callbacks.callbacks[state]) {
+                pKey->NotActive = pKey->Callbacks.callbacks[state](pKey, state);
             }
         #else
-            if (Key_ptr(pKey)->Callbacks.onChange) {
-                Key_ptr(pKey)->NotActive = Key_ptr(pKey)->Callbacks.onChange(Key_ptr(pKey), state);
+            if (pKey->Callbacks.onChange) {
+                pKey->NotActive = pKey->Callbacks.onChange(pKey, state);
             }
         #endif /* KEY_MULTI_CALLBACK_ENABLE */
         }
-        else if (Key_State_None == state && Key_ptr(pKey)->NotActive != Key_NotHandled) {
-            Key_ptr(pKey)->NotActive = Key_NotHandled;
+        else if (Key_State_None == state && pKey->NotActive != Key_NotHandled) {
+            pKey->NotActive = Key_NotHandled;
         }
+    #if KEY_ENABLE_FLAG
+        }
+    #endif // KEY_ENABLE_FLAG
     #if KEY_MAX_NUM == -1
         // switch to previous key
         pKey = pKey->Previous;
     #else
+        }
         pKey++;
     #endif // KEY_MAX_NUM == -1
     }
@@ -94,7 +93,24 @@ void Key_setConfig(Key* key, const Key_PinConfig* config) {
 const Key_PinConfig* Key_getConfig(Key* key) {
     return key->Config;
 }
-
+#if KEY_MAX_NUM > 0
+/**
+ * @brief finding a empty space for new key in array
+ * 
+ * @return Key* return null if not found empty space
+ */
+Key* Key_new(void) {
+    uint8_t len = KEY_MAX_NUM;
+    Key* pKey = keys;
+    while (len--) {
+        if (pKey->Configured) {
+            return pKey;
+        }
+        pKey++;
+    }
+    return KEY_NULL;
+}
+#endif // KEY_MAX_NUM
 /**
  * @brief add key into list for process
  * 
@@ -102,6 +118,10 @@ const Key_PinConfig* Key_getConfig(Key* key) {
  * @param config key pin configuration
  */
 uint8_t Key_add(Key* key, const Key_PinConfig* config) {
+    // check for null
+    if (KEY_NULL == key) {
+        return 0;
+    }
     // add new key to list
     key->State = Key_State_None;
     key->NotActive = Key_NotHandled;
@@ -112,22 +132,10 @@ uint8_t Key_add(Key* key, const Key_PinConfig* config) {
     // add key to linked list
     key->Previous = lastKey;
     lastKey = key;
-    return 1;
-#else
-    // find empty space for new key
-    {
-        uint8_t len = KEY_MAX_NUM;
-        Key** pKey = keys;
-        while (len--) {
-            if (KEY_NULL == *pKey) {
-                *pKey = key;
-                return 1;
-            }
-            pKey++;
-        } 
-    }
-    return 0;
 #endif // KEY_MAX_NUM == -1
+    key->Configured = 1;
+    key->Enabled = 1;
+    return 1;
 }
 /**
  * @brief remove key from list
@@ -138,35 +146,63 @@ uint8_t Key_add(Key* key, const Key_PinConfig* config) {
 uint8_t Key_remove(Key* remove) {
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
-#else
-    Key** pKey = keys;
-#endif // KEY_MAX_NUM == -1
-    // find key
-    while (KEY_NULL != Key_ptr(pKey)) {
-    #if KEY_MAX_NUM == -1
-        // check key with remove key
+    while (KEY_NULL != pKey) {
         if (remove == pKey->Previous) {
             // deinit IO
-					#if KEY_USE_DEINIT
+		#if KEY_USE_DEINIT
             if (keyDriver->deinitPin) {
                 keyDriver->deinitPin(remove->Config);
             }
-					#endif
+        #endif
             // remove key dropped from link list
             pKey->Previous = remove->Previous;
             remove->Previous = KEY_NULL;
+            remove->Configured = 0;
+            remove->Enabled = 0;
             return 1;
         }
         pKey = pKey->Previous;
-    #else
-        if (remove == *pKey) {
-            *pKey = KEY_NULL;
+    }
+#else
+    uint8_t len = KEY_MAX_NUM;
+    Key* pKey = keys;
+    while (len--) {
+        if (remove == pKey && pKey->Configured) {
+            pKey->Configured = 0;
+            pKey->Enabled = 0;
             return 1;
         }
         pKey++;
-    #endif // KEY_MAX_NUM == -1
     }
+#endif // KEY_MAX_NUM == -1
     return 0;
+}
+/**
+ * @brief finding key based on PinConfig in list
+ * 
+ * @param config 
+ * @return Key* 
+ */
+Key* Key_find(const Key_PinConfig* config) {
+#if KEY_MAX_NUM == -1
+    Key* pKey = lastKey;
+    while (KEY_NULL != pKey) {
+        if (config == pKey->Config) {
+            return pKey;
+        }
+        pKey = pKey->Previous;
+    }
+#else
+    uint8_t len = KEY_MAX_NUM;
+    Key* pKey = keys;
+    while (len--) {
+        if (config == pKey->Config) {
+            return pKey;
+        }
+        pKey++;
+    }
+#endif // KEY_MAX_NUM == -1
+    return KEY_NULL;
 }
 
 #if KEY_MULTI_CALLBACK
@@ -198,6 +234,15 @@ Key_ActiveState Key_getActiveState(Key* key) {
     return (Key_ActiveState) key->ActiveState;
 }
 #endif /* KEY_ACTIVE_STATE_ENABLE */
+
+#if KEY_ENABLE_FLAG
+void Key_setEnabled(Key* key, uint8_t enabled) {
+    key->Enabled = enabled;
+}
+uint8_t Key_isEnabled(Key* key) {
+    return key->Enabled;
+}
+#endif
 
 #if KEY_ARGS
 void Key_setArgs(Key*, void* args) {
