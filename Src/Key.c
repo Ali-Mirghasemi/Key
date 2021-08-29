@@ -146,6 +146,21 @@ uint8_t Key_add(Key* key, const Key_PinConfig* config) {
 uint8_t Key_remove(Key* remove) {
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
+    // check last key first
+    if (remove == pKey) {
+        // deinit IO
+    #if KEY_USE_DEINIT
+        if (keyDriver->deinitPin) {
+            keyDriver->deinitPin(remove->Config);
+        }
+    #endif
+        // remove key dropped from link list
+        pKey->Previous = remove->Previous;
+        remove->Previous = KEY_NULL;
+        remove->Configured = 0;
+        remove->Enabled = 0;
+        return 1;
+    }
     while (KEY_NULL != pKey) {
         if (remove == pKey->Previous) {
             // deinit IO
