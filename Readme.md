@@ -2,10 +2,10 @@
 
 ## Abstract
 
-this library used for handle input keys and buttons
+This library used for handle input keys and buttons
 
 it's based on HAL layer
-user can port library to every MCU 
+user can port library to every hardware 
 
 ## Port
 
@@ -44,33 +44,36 @@ Key_init(&keyDriver);
 
 in the configuration part in top of Key.h user can change and customize library based on what need in project
 
-### KEY_MULTI_CALLBACK
+#### KEY_MULTI_CALLBACK
 define KEY_MULTI_CALLBACK if u want have sperate callback functions for each state such as Key_onPressed, Key_onHold, Key_onReleased
 
-### KEY_ACTIVE_STATE
+#### KEY_ACTIVE_STATE
 user can have different Key Active State for each key (pin)
 
-### KEY_NONE_CALLBACK
+#### KEY_NONE_CALLBACK
 give user Key_State_None callback, must enable KEY_MULTI_CALLBACK None callback fire periodically
 
-### KEY_USE_DEINIT
+#### KEY_USE_DEINIT
 user must define deinitPin function in Key_Driver
 
-### KEY_CONFIG_IO
+#### KEY_CONFIG_IO
 if Key is based on pair of GPIO and Pin num must enable it for arduino must disable it
 
-### Key_IO
+#### Key_IO
 hold key io
 user can change it to GPIO_TypeDef or anything else that system want
 
-### Key_Pin
+#### Key_Pin
 hold key pin num or pin bit
 user can change it to uint8_t for 8-bit systems like AVR
 
-### KEY_MAX_NUM
+#### KEY_MAX_NUM
 maximum number of keys
 -1 for unlimited, lib use linked list 
 x for limited keys, lib use pointer array
 
-### Pre-Implemented KeyPort
+#### Pre-Implemented KeyPort
 in Port folder shows how to port and it's provide some port for MCUs
+
+## Examples 
+- [Key-AVR-Example](./Examples/Key-AVR-Example/) shows basic usage of `Key` Library
