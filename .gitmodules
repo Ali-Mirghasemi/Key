@@ -1,3 +1,6 @@
 [submodule "Examples/Key-AVR-Example"]
 	path = Examples/Key-AVR-Example
 	url = https://github.com/Ali-Mirghasemi/Key-AVR-Example
+[submodule "Examples/Key-AVR-Example-PlatformIO"]
+	path = Examples/Key-AVR-Example-PlatformIO
+	url = https://github.com/hamsaco/Key-AVR-Example-PlatformIO
