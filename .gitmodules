@@ -4,3 +4,6 @@
 [submodule "Examples/Key-AVR-Example-PlatformIO"]
 	path = Examples/Key-AVR-Example-PlatformIO
 	url = https://github.com/hamsaco/Key-AVR-Example-PlatformIO
+[submodule "Examples/Key-STM32F429-DISCO"]
+	path = Examples/Key-STM32F429-DISCO
+	url = https://github.com/Ali-Mirghasemi/Key-STM32F429-DISCO
