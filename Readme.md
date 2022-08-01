@@ -27,7 +27,7 @@ uint8_t Key_readPin(const Key_PinConfig* config);
 and in the final step give Key_Driver to Key_init function
 remember deinitPin function it's optional and can be disable in Configuration 
 ```C
-const Key_Driver keyDriver = {
+const Key_Driver KEY_DRIVER = {
     Key_initPin,
     Key_readPin,
 #if KEY_USE_DEINIT
@@ -39,6 +39,9 @@ const Key_Driver keyDriver = {
 Key_init(&keyDriver);
 
 ```
+
+## Dependencies
+- stdint.h
 
 ## Configuration
 
