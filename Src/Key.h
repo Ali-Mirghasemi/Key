@@ -16,6 +16,8 @@
 extern "C" {
 #endif 
 
+#include <stdint.h>
+
 /******************************************************************************/
 /*                                Configuration                               */
 /******************************************************************************/
@@ -23,8 +25,16 @@ extern "C" {
  * Include your libs
  * IO libs maybe needed
  */
-#include <stdint.h>
-#include "..\Port\KeyIO.h"
+
+
+/**
+ * @brief enable key predefined port 
+ */
+#define KEY_PORT                        1
+
+#if KEY_PORT
+    #include "..\Port\KeyIO.h"
+#endif
 
 /**
  * @brief define KEY_MULTI_CALLBACK if u want have sperate callback functions
@@ -46,17 +56,17 @@ extern "C" {
  * @brief give user Key_State_None callback
  * None callback fire periodically
  */
-#define KEY_NONE_CALLBACK	            0
+#define KEY_NONE_CALLBACK               0
 
 /**
  * @brief user must define deinitPin function in Key_Driver
  */
-#define KEY_USE_DEINIT	                0
+#define KEY_USE_DEINIT                  0
 /**
  * @brief if Key is based on pair of GPIO and Pin num must enable it
  * for arduino must disable it
  */
-#define KEY_CONFIG_IO	                1
+#define KEY_CONFIG_IO                   1
 
 /**
  * @brief hold key io

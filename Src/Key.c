@@ -28,18 +28,18 @@ void Key_irq(void) {
 #else
     Key* pKey = keys;
     uint8_t len = KEY_MAX_NUM;
-    while (len--) {
+    while (len-- > 0) {
         if (pKey->Configured) {
 #endif
     #if KEY_ENABLE_FLAG
         if (pKey->Enabled) {
     #endif // KEY_ENABLE_FLAG
         // update current state
-        state = pKey->State;
+        state = (Key_State) pKey->State;
     #if KEY_ACTIVE_STATE
-        state = ((state << 1) | (keyDriver->readPin(pKey->Config) ^ pKey->ActiveState)) & 0x03;
+        state = (Key_State)(((state << 1) | (keyDriver->readPin(pKey->Config) ^ pKey->ActiveState)) & 0x03);
     #else
-        state = ((state << 1) | keyDriver->readPin(pKey->Config)) & 0x03;
+        state = (Key_State) (((state << 1) | keyDriver->readPin(pKey->Config)) & 0x03);
     #endif // KEY_ACTIVE_STATE
         pKey->State = state;
         // call callback on new state
@@ -102,8 +102,8 @@ const Key_PinConfig* Key_getConfig(Key* key) {
 Key* Key_new(void) {
     uint8_t len = KEY_MAX_NUM;
     Key* pKey = keys;
-    while (len--) {
-        if (pKey->Configured) {
+    while (len-- > 0) {
+        if (!pKey->Configured) {
             return pKey;
         }
         pKey++;
@@ -267,3 +267,4 @@ void* Key_getArgs(Key* key) {
     return key->Args;
 }
 #endif
+
