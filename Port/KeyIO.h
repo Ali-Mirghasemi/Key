@@ -11,9 +11,12 @@
 #ifndef _KEY_IO_H_
 #define _KEY_IO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
-#define KEY_HW_CUSTOM       0
 #define KEY_HW_AVR          1
 #define KEY_HW_STM32F0      2
 #define KEY_HW_STM32F1      3
@@ -24,7 +27,9 @@
 /**
  * @brief set your hardware from above list
  */
-#define KEY_HW              KEY_HW_AVR
+#ifndef KEY_HW
+    #define KEY_HW              KEY_HW_AVR
+#endif
 
 #if KEY_HW == KEY_HW_AVR
 typedef union {
@@ -67,11 +72,22 @@ typedef struct {
 #define GPIO_PIN_7      0x80
 
 
+#elif KEY_HW == KEY_HW_STM32F0 
+    #include "stm32f0xx.h"
+#elif KEY_HW == KEY_HW_STM32F1 
+    #include "stm32f1xx.h"
+#elif KEY_HW == KEY_HW_STM32F2
+    #include "stm32f2xx.h"
+#elif KEY_HW == KEY_HW_STM32F3
+    #include "stm32f3xx.h"
+#elif KEY_HW == KEY_HW_STM32F4
+    #include "stm32f4xx.h"
 #else
-
-typedef void GPIO_TypeDef;
-
+    #error "Please select your hardware"
 #endif
 
+#ifdef __cplusplus
+};
+#endif
 
 #endif /* _KEY_IO_H_ */
