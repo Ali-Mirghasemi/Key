@@ -13,7 +13,12 @@
 #ifndef _KEY_PORT_H_
 #define _KEY_PORT_H_
 
-#include "Key.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#include "../Src/Key.h"
 
 void Key_initPin(const Key_PinConfig* config);
 uint8_t Key_readPin(const Key_PinConfig* config);
@@ -22,12 +27,10 @@ uint8_t Key_readPin(const Key_PinConfig* config);
 void Key_deInitPin(const Key_PinConfig* config);
 #endif
 
-static const Key_Driver keyDriver = {
-    Key_initPin,
-    Key_readPin,
-#if KEY_USE_DEINIT
-    Key_deInitPin,
-#endif
+extern const Key_Driver KEY_DRIVER;
+
+#ifdef __cplusplus
 };
+#endif
 
 #endif /* _KEY_PORT_H_ */
