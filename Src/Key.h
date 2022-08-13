@@ -72,7 +72,9 @@ extern "C" {
  * @brief hold key io
  * user can change it to GPIO_TypeDef or anything else that system want
  */
-typedef GPIO_TypeDef* Key_IO;
+#if KEY_CONFIG_IO
+    typedef GPIO_TypeDef* Key_IO;
+#endif
 /**
  * @brief hold key pin num or pin bit
  * user can change it to uint8_t for 8-bit systems like AVR
