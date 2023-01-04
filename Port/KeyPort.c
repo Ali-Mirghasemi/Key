@@ -2,8 +2,10 @@
 #include "KeyIO.h"
 
 const Key_Driver KEY_DRIVER = {
-    Key_initPin,
     Key_readPin,
+#if KEY_USE_INIT
+    Key_initPin,
+#endif
 #if KEY_USE_DEINIT
     Key_deInitPin,
 #endif
@@ -11,10 +13,13 @@ const Key_Driver KEY_DRIVER = {
 
 #if KEY_HW == KEY_HW_AVR
 
+#if KEY_USE_INIT
 void Key_initPin(const Key_PinConfig* config) {
     config->IO->Direction.Value &= ~config->Pin;
     config->IO->OutputData.Value |= config->Pin;
 }
+#endif
+
 uint8_t Key_readPin(const Key_PinConfig* config) {
     return (config->IO->InputData.Value & config->Pin) != 0;
 }
@@ -26,10 +31,13 @@ void Key_deInitPin(const Key_PinConfig* config) {
 
 #elif KEY_HW == KEY_HW_STM32F0 
 
+#if KEY_USE_INIT
 void Key_initPin(const Key_PinConfig* config) {
     config->IO->Direction.Value &= ~config->Pin;
     config->IO->OutputData.Value |= config->Pin;
 }
+#endif
+
 uint8_t Key_readPin(const Key_PinConfig* config) {
     return (config->IO->InputData.Value & config->Pin) != 0;
 }
@@ -47,6 +55,7 @@ void Key_deInitPin(const Key_PinConfig* config) {
     
 #elif KEY_HW == KEY_HW_STM32F4
 
+#if KEY_USE_INIT
 void Key_initPin(const Key_PinConfig* config) {
     config->IO->MODER &= ~(0x03 << (config->Pin + config->Pin));
 #if !KEY_ACTIVE_STATE
@@ -54,6 +63,8 @@ void Key_initPin(const Key_PinConfig* config) {
     config->IO->PUPDR |= 0x01 << (config->Pin + config->Pin);
 #endif
 }
+#endif
+
 uint8_t Key_readPin(const Key_PinConfig* config) {
     return (config->IO->IDR & config->Pin) != 0;
 }

@@ -20,8 +20,11 @@ extern "C" {
 
 #include "../Src/Key.h"
 
-void Key_initPin(const Key_PinConfig* config);
 uint8_t Key_readPin(const Key_PinConfig* config);
+
+#if KEY_USE_INIT
+void Key_initPin(const Key_PinConfig* config);
+#endif
 
 #if KEY_USE_DEINIT
 void Key_deInitPin(const Key_PinConfig* config);
