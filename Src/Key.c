@@ -8,6 +8,18 @@ static const Key_Driver* keyDriver;
     static Key keys[KEY_MAX_NUM] = {0};
 #endif // KEY_MAX_NUM == -1
 
+#if KEY_USE_INIT
+    #define __initPin(CONF)          if (keyDriver->initPin) { keyDriver->initPin(CONF); }
+#else
+    #define __initPin(CONF)
+#endif
+
+#if KEY_USE_DEINIT
+    #define __deinitPin(CONF)        if (keyDriver->deinitPin) { keyDriver->deinitPin(CONF); }
+#else
+    #define __deinitPin(CONF)
+#endif
+
 /**
  * @brief use for initialize
  * 
@@ -20,7 +32,7 @@ void Key_init(const Key_Driver* driver) {
  * @brief user must place it in timer with 20ms ~ 50ms 
  * all of callbacks handle and fire in this function
  */
-void Key_irq(void) {
+void Key_handle(void) {
     Key_State state;
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
@@ -127,7 +139,7 @@ uint8_t Key_add(Key* key, const Key_PinConfig* config) {
     key->NotActive = Key_NotHandled;
     Key_setConfig(key, config);
     // init IOs
-    keyDriver->initPin(config);
+    __initPin(config);
 #if KEY_MAX_NUM == -1
     // add key to linked list
     key->Previous = lastKey;
@@ -149,11 +161,7 @@ uint8_t Key_remove(Key* remove) {
     // check last key first
     if (remove == pKey) {
         // deinit IO
-    #if KEY_USE_DEINIT
-        if (keyDriver->deinitPin) {
-            keyDriver->deinitPin(remove->Config);
-        }
-    #endif
+        __deinitPin(remove->Config);
         // remove key dropped from link list
         pKey->Previous = remove->Previous;
         remove->Previous = KEY_NULL;
@@ -164,11 +172,7 @@ uint8_t Key_remove(Key* remove) {
     while (KEY_NULL != pKey) {
         if (remove == pKey->Previous) {
             // deinit IO
-		#if KEY_USE_DEINIT
-            if (keyDriver->deinitPin) {
-                keyDriver->deinitPin(remove->Config);
-            }
-        #endif
+            __deinitPin(remove->Config);
             // remove key dropped from link list
             pKey->Previous = remove->Previous;
             remove->Previous = KEY_NULL;

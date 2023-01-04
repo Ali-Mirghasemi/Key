@@ -2,7 +2,7 @@
  * @file Key.h
  * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
  * @brief this library use for drive key, button and input signals
- * @version 0.2.0
+ * @version 0.3.0
  * @date 2021-06-28
  * 
  * @copyright Copyright (c) 2021
@@ -30,14 +30,14 @@ extern "C" {
 /**
  * @brief enable key predefined port 
  */
-#define KEY_PORT                        1
+#define KEY_PORT                        0
 
 #if KEY_PORT
     #include "..\Port\KeyIO.h"
 #endif
 
 /**
- * @brief define KEY_MULTI_CALLBACK if u want have sperate callback functions
+ * @brief define KEY_MULTI_CALLBACK if u want have separate callback functions
  * for each state such as Key_onPressed, Key_onHold, Key_onReleased
  */
 #define KEY_MULTI_CALLBACK              1
@@ -59,6 +59,10 @@ extern "C" {
 #define KEY_NONE_CALLBACK               0
 
 /**
+ * @brief user must define initPin function in Key_Driver
+ */
+#define KEY_USE_INIT                    0
+/**
  * @brief user must define deinitPin function in Key_Driver
  */
 #define KEY_USE_DEINIT                  0
@@ -73,20 +77,20 @@ extern "C" {
  * user can change it to GPIO_TypeDef or anything else that system want
  */
 #if KEY_CONFIG_IO
-    typedef GPIO_TypeDef* Key_IO;
+    typedef void* Key_IO;
 #endif
 /**
  * @brief hold key pin num or pin bit
  * user can change it to uint8_t for 8-bit systems like AVR
  */
-typedef uint8_t Key_Pin;
+typedef uint16_t Key_Pin;
 
 /**
  * @brief maximum number of keys
  * -1 for unlimited, lib use linked list 
  * x for limited keys, lib use pointer array
  */
-#define KEY_MAX_NUM                     3
+#define KEY_MAX_NUM                     -1
 
 /**
  * @brief user can store some args in key struct and retrive them in callbacks
@@ -172,11 +176,13 @@ typedef Key_HandleStatus (*Key_Callback)(Key* key, Key_State state);
  * user must pass atleast init and read functions to key library
  */
 typedef struct {
-    Key_InitPinFn     initPin;
     Key_ReadPinFn     readPin;
-    #if KEY_USE_DEINIT
-        Key_DeInitPinFn   deinitPin;
-    #endif
+#if KEY_USE_INIT
+    Key_InitPinFn     initPin;
+#endif
+#if KEY_USE_DEINIT
+    Key_DeInitPinFn   deinitPin;
+#endif
 } Key_Driver;
 
 
@@ -227,7 +233,7 @@ struct _Key {
 };
 
 void Key_init(const Key_Driver* driver);
-void Key_irq(void);
+void Key_handle(void);
 
 void Key_setConfig(Key* key, const Key_PinConfig* config);
 const Key_PinConfig* Key_getConfig(Key* key);
