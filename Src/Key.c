@@ -34,6 +34,7 @@ void Key_init(const Key_Driver* driver) {
  */
 void Key_handle(void) {
     Key_State state;
+    static uint16_t scanHistory = 0;
 #if KEY_MAX_NUM == -1
     Key* pKey = lastKey;
     while (KEY_NULL != pKey) {
@@ -49,10 +50,11 @@ void Key_handle(void) {
         // update current state
         state = (Key_State) pKey->State;
     #if KEY_ACTIVE_STATE
-        state = (Key_State)(((state << 1) | (keyDriver->readPin(pKey->Config) ^ pKey->ActiveState)) & 0x03);
+        scanHistory = (scanHistory << 1) | (keyDriver->readPin(pKey->Config) ^ pKey->ActiveState);
     #else
-        state = (Key_State) (((state << 1) | keyDriver->readPin(pKey->Config)) & 0x03);
+        scanHistory = (scanHistory << 1) | (keyDriver->readPin(pKey->Config));
     #endif // KEY_ACTIVE_STATE
+        state = (scanHistory == 0xFFFF) ? Key_State_LongPressed : (Key_State) (scanHistory & 0x03);
         pKey->State = state;
         // call callback on new state
 		if (pKey->NotActive == Key_NotHandled
@@ -233,6 +235,9 @@ void Key_onReleased(Key* key, Key_Callback cb) {
 }
 void Key_onPressed(Key* key, Key_Callback cb) {
     key->Callbacks.onPressed = cb;
+}
+void Key_onLongPressed(Key* key, Key_Callback cb) {
+    key->Callbacks.onLongPressed = cb;
 }
 #if KEY_NONE_CALLBACK
 void Key_onNone(Key* key, Key_Callback cb) {

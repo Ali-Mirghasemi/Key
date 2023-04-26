@@ -114,14 +114,15 @@ typedef struct {
 
 /**
  * @brief Key state
- *        _____                __(None)__
- * (Presed)  <-|____(Hold)____|-> (Released)
+ *        _____                                     __(None)__
+ * (Presed)  <-|____(Hold)________(LongPressed)____|-> (Released)
  */
 typedef enum {
     Key_State_Hold          = 0x00,
     Key_State_Released      = 0x01,
     Key_State_Pressed       = 0x02,
-    Key_State_None          = 0x03
+    Key_State_None          = 0x03,
+    Key_State_LongPressed   = 0x04
 } Key_State;
 
 /**
@@ -188,9 +189,9 @@ typedef struct {
 
 // determine how many callbacks need
 #if KEY_MULTI_CALLBACK && KEY_NONE_CALLBACK
-    #define KEY_CALLBACKS_NUM 4
+    #define KEY_CALLBACKS_NUM 5
 #elif KEY_MULTI_CALLBACK
-    #define KEY_CALLBACKS_NUM 3
+    #define KEY_CALLBACKS_NUM 4
 #else
     #define KEY_CALLBACKS_NUM 1
 #endif
@@ -202,6 +203,7 @@ typedef union {
         Key_Callback        onHold;
         Key_Callback        onReleased;
         Key_Callback        onPressed;
+        Key_Callback        onLongPressed;
     #if KEY_NONE_CALLBACK
         Key_Callback        onNone;
     #endif // KEY_NONE_CALLBACK
@@ -250,6 +252,7 @@ Key*    Key_find(const Key_PinConfig* config);
     void Key_onHold(Key* key, Key_Callback cb);
     void Key_onReleased(Key* key, Key_Callback cb);
     void Key_onPressed(Key* key, Key_Callback cb);
+    void Key_onLongPressed(Key* key, Key_Callback cb);
 #if KEY_NONE_CALLBACK
     void Key_onNone(Key* key, Key_Callback cb);
 #endif // KEY_NONE_CALLBACK
